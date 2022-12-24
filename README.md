@@ -5,5 +5,5 @@ This is a program to test the features of [libschrift](https://github.com/tomolt
 
 The code in show.c is hereby placed in the public domain and also under the MIT license.
 
-See the LICENSE file for copyright and license details on the code in in schrift.c and schrift.h.
+See the LICENSE file for copyright and license details on the code in schrift.c and schrift.h.
 
