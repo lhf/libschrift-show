@@ -2,7 +2,7 @@
 * show.c
 * show text using libschrift
 * Luiz Henrique de Figueiredo <lhf@tecgraf.puc-rio.br>
-* Sat Dec 24 14:12:12 -03 2022
+* Sun Dec 25 16:16:11 -03 2022
 * This code is hereby placed in the public domain and also under the MIT license.
 */
 
@@ -47,6 +47,7 @@ static void newimage(SFT_Image *image, int width, int height)
 	image->width  = width;
 	image->height = height;
 	int background = 100;
+	//background = 0;
 	memset(pixels,background,size);
 }
 
@@ -59,20 +60,23 @@ static void saveimage(SFT_Image *image, FILE *f)
 
 static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0)
 {
-	char *d=dest->pixels;
-	char *s=source->pixels;
+	unsigned char *d=dest->pixels;
+	unsigned char *s=source->pixels;
 	d+=x0+y0*dest->width;
 	int y;
 	for (y=0; y<source->height; y++)
 	{
-		memcpy(d,s,source->width);
 #if 0
+		memcpy(d,s,source->width);
+#else
 		int x;
 		for (x=0; x<source->width; x++)
-		//	if (s[x]!=0) d[x]=255-s[x];
+		{
+			d[x]=(255-d[x])/255.0*s[x]+d[x];
+		//	d[x]=(255-d[x])/255.0*s[x]+d[x];
+		//	d[x]=s[x];
 		//	if (s[x]!=0) d[x]=s[x];
-		//	d[x]=255*(d[x]/255)*(s[x]/255);
-			d[x]=s[x];
+		}
 #endif
 		d+=dest->width;
 		s+=source->width;
@@ -111,7 +115,7 @@ int main(int argc, char *argv[])
 		SFT_Glyph gid;
 		SFT_GMetrics mtx;
 		loadglyph(&sft, cp, &gid, &mtx);
-		width += mtx.minWidth;
+		width += mtx.advanceWidth+mtx.leftSideBearing;
 		aheight = max(aheight,-mtx.yOffset);
 		bheight = max(bheight, mtx.yOffset+mtx.minHeight);
 		//fprintf(stderr,"%c cp=%d advanceWidth=%g leftSideBearing=%g yOffset=%d minWidth=%d minHeight=%d\n", message[k],cp,mtx.advanceWidth, mtx.leftSideBearing, mtx.yOffset, mtx.minWidth, mtx.minHeight);
@@ -134,9 +138,9 @@ int main(int argc, char *argv[])
 		loadglyph(&sft, cp, &gid, &mtx);
 		newimage(&image, mtx.minWidth, mtx.minHeight);
 		sft_render(&sft, gid, image);
-		copyimage(&canvas,&image,x,y+mtx.yOffset);		/* TODO? advanceWidth, leftSideBearing */
+		copyimage(&canvas,&image,x+mtx.leftSideBearing,y+mtx.yOffset);
 		free(image.pixels);
-		x+=image.width;		// x+=mtx.advanceWidth;
+		x+=mtx.advanceWidth;
 	}
 	//memset((char*)canvas.pixels+y*canvas.width, 128, canvas.width);
 	saveimage(&canvas,stdout);

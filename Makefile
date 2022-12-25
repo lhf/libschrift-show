@@ -1,6 +1,6 @@
 # show text using libschrift
 
-CFLAGS = -O2 -std=c99 -pedantic -Wall -Wextra -Wconversion 
+CFLAGS = -O2 -std=c99 -pedantic -Wall -Wextra # -Wconversion 
 
 all:	run
 
