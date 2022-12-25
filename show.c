@@ -2,7 +2,7 @@
 * show.c
 * show text using libschrift
 * Luiz Henrique de Figueiredo <lhf@tecgraf.puc-rio.br>
-* Sun Dec 25 16:16:11 -03 2022
+* Sun Dec 25 19:55:53 -03 2022
 * This code is hereby placed in the public domain and also under the MIT license.
 */
 
@@ -66,18 +66,15 @@ static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0)
 	int y;
 	for (y=0; y<source->height; y++)
 	{
-#if 0
-		memcpy(d,s,source->width);
-#else
+		int c=255;
 		int x;
 		for (x=0; x<source->width; x++)
 		{
-			d[x]=(255-d[x])/255.0*s[x]+d[x];
-		//	d[x]=(255-d[x])/255.0*s[x]+d[x];
+			double t=s[x]/255.0;
+			d[x]=(1.0-t)*d[x]+t*c;
 		//	d[x]=s[x];
 		//	if (s[x]!=0) d[x]=s[x];
 		}
-#endif
 		d+=dest->width;
 		s+=source->width;
 	}
