@@ -14,8 +14,9 @@ run:	show
 	open out.pgm
 
 F= /System/Library/Fonts/NewYork.ttf
+F= '/System/Library/Fonts/Supplemental/Times New Roman Italic.ttf'
 S= 1000
-C= abfgj
+C= abfgj.
 
 clean:
 	rm -f show schrift.o out.pgm

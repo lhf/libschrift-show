@@ -59,8 +59,9 @@ static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0, 
 {
 	unsigned char *d=dest->pixels;
 	unsigned char *s=source->pixels;
-	d+=x0+y0*dest->width;
 	int y;
+	//for (y=0; y<dest->height; y++) d[x0+y*dest->width]=150;
+	d+=x0+y0*dest->width;
 	for (y=0; y<source->height; y++)
 	{
 		int x;
@@ -92,10 +93,6 @@ int main(int argc, char *argv[])
 
 	loadfont(&sft, filename, size);
 
-	SFT_LMetrics lmtx;
-	sft_lmetrics(&sft, &lmtx);
-	//fprintf(stderr,"SFT_LMetrics ascender=%g descender=%g lineGap=%g\n",lmtx.ascender,lmtx.descender,lmtx.lineGap);
-
 	size_t k;
 	int margin = 100;
 	int width  = 0;
@@ -108,32 +105,37 @@ int main(int argc, char *argv[])
 		SFT_Glyph gid;
 		SFT_GMetrics mtx;
 		loadglyph(&sft, cp, &gid, &mtx);
-		width += mtx.advanceWidth+mtx.leftSideBearing;
+		width  += max(mtx.advanceWidth,mtx.minWidth);
 		aheight = max(aheight,-mtx.yOffset);
 		bheight = max(bheight, mtx.yOffset+mtx.minHeight);
-		//fprintf(stderr,"%c cp=%d advanceWidth=%g leftSideBearing=%g yOffset=%d minWidth=%d minHeight=%d\n", message[k],cp,mtx.advanceWidth, mtx.leftSideBearing, mtx.yOffset, mtx.minWidth, mtx.minHeight);
+		if (k==0 && mtx.leftSideBearing<0 && margin<-mtx.leftSideBearing) margin=mtx.leftSideBearing;
 	}
 	height = aheight+bheight;
 	width += 2*margin;
 	height+= 2*margin;
-	newimage(&canvas, width, height,100);
+	newimage(&canvas,width,height,255);
 
-	int x = margin;
+	double x = margin;
 	int y = margin;
 	int baseline = aheight;
 	y += baseline;
+	SFT_Glyph ogid=0;
 	for (k=0; k<strlen(message); k++)
 	{
 		SFT_Image image;
 		SFT_UChar cp = (SFT_UChar) message[k];
 		SFT_Glyph gid;
 		SFT_GMetrics mtx;
+		SFT_Kerning kerning;
 		loadglyph(&sft, cp, &gid, &mtx);
 		newimage(&image, mtx.minWidth, mtx.minHeight,0);
 		sft_render(&sft, gid, image);
-		copyimage(&canvas,&image,x+mtx.leftSideBearing,y+mtx.yOffset,255);
+		sft_kerning (&sft, ogid, gid, &kerning);
+		x += kerning.xShift;
+		copyimage(&canvas,&image,x+mtx.leftSideBearing,y+mtx.yOffset,0);
+		x += mtx.advanceWidth;
 		free(image.pixels);
-		x+=mtx.advanceWidth;
+		ogid=gid;
 	}
 	//memset((char*)canvas.pixels+y*canvas.width, 128, canvas.width);
 	saveimage(&canvas,stdout);
