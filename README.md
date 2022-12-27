@@ -7,3 +7,7 @@ The code in show.c is hereby placed in the public domain and also under the MIT 
 
 See the LICENSE file for copyright and license details on the code in schrift.c and schrift.h.
 
+TODO
+----
+- Explore kerning
+- Explore multiline texts

@@ -1,8 +1,7 @@
 /*
 * show.c
 * show text using libschrift
-* Luiz Henrique de Figueiredo <lhf@tecgraf.puc-rio.br>
-* Sun Dec 25 19:55:53 -03 2022
+* https://github.com/lhf/libschrift-show
 * This code is hereby placed in the public domain and also under the MIT license.
 */
 
@@ -39,16 +38,14 @@ static void loadglyph(const SFT *sft, SFT_UChar codepoint, SFT_Glyph *glyph, SFT
 	if (sft_gmetrics(sft, *glyph, metrics)< 0) fatal("sft_gmetrics failed");
 }
 
-static void newimage(SFT_Image *image, int width, int height)
+static void newimage(SFT_Image *image, int width, int height, int color)
 {
 	size_t size = (size_t) (width*height);
 	void *pixels  = malloc(size);
 	image->pixels = pixels;
 	image->width  = width;
 	image->height = height;
-	int background = 100;
-	//background = 0;
-	memset(pixels,background,size);
+	memset(pixels,color,size);
 }
 
 static void saveimage(SFT_Image *image, FILE *f)
@@ -58,7 +55,7 @@ static void saveimage(SFT_Image *image, FILE *f)
 	fwrite(image->pixels,size,1,f);
 }
 
-static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0)
+static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0, int color)
 {
 	unsigned char *d=dest->pixels;
 	unsigned char *s=source->pixels;
@@ -66,12 +63,11 @@ static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0)
 	int y;
 	for (y=0; y<source->height; y++)
 	{
-		int c=255;
 		int x;
 		for (x=0; x<source->width; x++)
 		{
 			double t=s[x]/255.0;
-			d[x]=(1.0-t)*d[x]+t*c;
+			d[x]=(1.0-t)*d[x]+t*color;
 		//	d[x]=s[x];
 		//	if (s[x]!=0) d[x]=s[x];
 		}
@@ -120,7 +116,7 @@ int main(int argc, char *argv[])
 	height = aheight+bheight;
 	width += 2*margin;
 	height+= 2*margin;
-	newimage(&canvas, width, height);
+	newimage(&canvas, width, height,100);
 
 	int x = margin;
 	int y = margin;
@@ -133,9 +129,9 @@ int main(int argc, char *argv[])
 		SFT_Glyph gid;
 		SFT_GMetrics mtx;
 		loadglyph(&sft, cp, &gid, &mtx);
-		newimage(&image, mtx.minWidth, mtx.minHeight);
+		newimage(&image, mtx.minWidth, mtx.minHeight,0);
 		sft_render(&sft, gid, image);
-		copyimage(&canvas,&image,x+mtx.leftSideBearing,y+mtx.yOffset);
+		copyimage(&canvas,&image,x+mtx.leftSideBearing,y+mtx.yOffset,255);
 		free(image.pixels);
 		x+=mtx.advanceWidth;
 	}
