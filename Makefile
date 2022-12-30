@@ -4,8 +4,8 @@
 F= /System/Library/Fonts/NewYork.ttf
 F= /System/Library/Fonts/NewYorkItalic.ttf
 F= /System/Library/Fonts/Supplemental/Times New Roman Italic.ttf
-S= 1000
-C= abfgj.
+S= 500
+C= Hello from\nlibschrift!\nabcdefghij
 
 CFLAGS = -O2 -std=c99 -pedantic -Wall -Wextra # -Wconversion
 

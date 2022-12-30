@@ -20,7 +20,7 @@ static void fatal(const char *message)
 	exit(1);
 }
 
-static void loadfont(SFT *sft, const char *filename, double size)
+static void loadfont(SFT *sft, const char *filename, double size, SFT_LMetrics *lmtx)
 {
 	SFT_Font *font = sft_loadfile(filename);
 	if (font == NULL) fatal("sft_loadfile failed");
@@ -30,6 +30,7 @@ static void loadfont(SFT *sft, const char *filename, double size)
 	sft->xOffset = 0.0;
 	sft->yOffset = 0.0;
 	sft->flags = SFT_DOWNWARD_Y;
+	if (sft_lmetrics(sft,lmtx) < 0) fatal("sft_lmetrics failed");
 }
 
 static void loadglyph(const SFT *sft, SFT_UChar codepoint, SFT_Glyph *glyph, SFT_GMetrics *metrics)
@@ -59,8 +60,8 @@ static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0, 
 {
 	unsigned char *d=dest->pixels;
 	unsigned char *s=source->pixels;
-	int y;
 	d+=x0+y0*dest->width;
+	int y;
 	for (y=0; y<source->height; y++)
 	{
 		int x;
@@ -68,8 +69,6 @@ static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0, 
 		{
 			double t=s[x]/255.0;
 			d[x]=(1.0-t)*d[x]+t*color;
-		//	d[x]=s[x];
-		//	if (s[x]!=0) d[x]=s[x];
 		}
 		d+=dest->width;
 		s+=source->width;
@@ -83,6 +82,7 @@ int main(int argc, char *argv[])
 	const char *message;
 	SFT sft;
 	SFT_Image canvas;
+	SFT_LMetrics lmtx;
 
 	progname = argv[0];
 	if (argc!=4) fatal("fontfile size_in_px string");
@@ -90,35 +90,50 @@ int main(int argc, char *argv[])
 	size = atof(argv[2]);
 	message = argv[3];
 
-	loadfont(&sft,filename,size);
+	loadfont(&sft,filename,size,&lmtx);
 
 	size_t k;
+	size_t n=strlen(message);
 	int margin = 100;
 	int width  = 0;
-	int height = 0;
-	int aheight = 0;
-	int bheight = 0;
-	for (k=0; k<strlen(message); k++)
+	int height = lmtx.ascender + lmtx.lineGap;
+	int lwidth = 0;
+	for (k=0; k<n; k++)
 	{
+		if (message[k]=='\\' && message[k+1]=='n')
+		{
+			k++;
+			width = max(width,lwidth);
+			height += lmtx.ascender - lmtx.descender + lmtx.lineGap;
+			lwidth = 0;
+			continue;
+		}
 		SFT_UChar cp = (SFT_UChar) message[k];
 		SFT_Glyph gid;
 		SFT_GMetrics mtx;
 		loadglyph(&sft,cp,&gid,&mtx);
-		width  += max(mtx.advanceWidth,mtx.minWidth);
-		aheight = max(aheight,-mtx.yOffset);
-		bheight = max(bheight, mtx.yOffset+mtx.minHeight);
-		if (k==0 && mtx.leftSideBearing<0 && margin<-mtx.leftSideBearing) margin-=mtx.leftSideBearing;
+		if (lwidth==0 && mtx.leftSideBearing<0 && margin<-mtx.leftSideBearing) margin-=mtx.leftSideBearing;
+		lwidth += max(mtx.advanceWidth,mtx.minWidth);
 	}
-	height = aheight+bheight;
+	height += -lmtx.descender + lmtx.lineGap;
+	width = max(width,lwidth);
 	width += 2*margin;
 	height+= 2*margin;
 	newimage(&canvas,width,height,255);
 
 	double x = margin;
-	double y = margin+aheight;
+	double y = margin + lmtx.ascender + lmtx.lineGap;
 	SFT_Glyph ogid=0;
-	for (k=0; k<strlen(message); k++)
+	for (k=0; k<n; k++)
 	{
+		if (message[k]=='\\' && message[k+1]=='n')
+		{
+			k++;
+			x  = margin;
+			y += lmtx.ascender - lmtx.descender + lmtx.lineGap;
+			ogid=0;
+			continue;
+		}
 		SFT_Image image;
 		SFT_UChar cp = (SFT_UChar) message[k];
 		SFT_Glyph gid;
