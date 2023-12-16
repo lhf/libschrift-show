@@ -12,7 +12,7 @@ CFLAGS = -O2 -std=c99 -pedantic -Wall -Wextra # -Wconversion
 all:	run
 
 run:	show
-	./show '$F' $S '$C' > out.pgm
+	./show '$F' $S '$C'
 	open out.pgm
 
 show:	show.c schrift.o

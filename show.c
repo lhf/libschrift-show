@@ -49,11 +49,14 @@ static void newimage(SFT_Image *image, int width, int height, int color)
 	memset(pixels,color,size);
 }
 
-static void saveimage(SFT_Image *image, FILE *f)
+static void saveimage(SFT_Image *image, const char *filename)
 {
 	size_t size = (size_t) (image->width*image->height);
-	printf("P5\n%d %d\n255\n",image->width,image->height);
+	FILE *f = fopen(filename,"wb");
+	if (f == NULL) fatal("opening output file failed");
+	fprintf(f,"P5\n%d %d\n255\n",image->width,image->height);
 	fwrite(image->pixels,size,1,f);
+	fclose(f);
 }
 
 static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0, int color)
@@ -149,7 +152,7 @@ int main(int argc, char *argv[])
 		free(image.pixels);
 		ogid=gid;
 	}
-	saveimage(&canvas,stdout);
+	saveimage(&canvas,"out.pgm");
 
 	free(canvas.pixels);
 	sft_freefont(sft.font);
