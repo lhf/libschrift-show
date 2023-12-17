@@ -53,7 +53,7 @@ static void saveimage(SFT_Image *image, const char *filename)
 {
 	size_t size = (size_t) (image->width*image->height);
 	FILE *f = fopen(filename,"wb");
-	if (f == NULL) fatal("opening output file failed");
+	if (f == NULL) fatal("fopen outfile failed");
 	fprintf(f,"P5\n%d %d\n255\n",image->width,image->height);
 	fwrite(image->pixels,size,1,f);
 	fclose(f);
@@ -80,20 +80,22 @@ static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0, 
 
 int main(int argc, char *argv[])
 {
-	const char *filename;
+	const char *fontfile;
 	double size;
 	const char *message;
+	const char *outfile;
 	SFT sft;
 	SFT_Image canvas;
 	SFT_LMetrics lmtx;
 
 	progname = argv[0];
-	if (argc!=4) fatal("fontfile size_in_px string");
-	filename = argv[1];
+	if (argc!=5) fatal("fontfile size_in_px message outfile");
+	fontfile = argv[1];
 	size = atof(argv[2]);
 	message = argv[3];
+	outfile = argv[4];
 
-	loadfont(&sft,filename,size,&lmtx);
+	loadfont(&sft,fontfile,size,&lmtx);
 
 	size_t k;
 	size_t n=strlen(message);
@@ -152,7 +154,7 @@ int main(int argc, char *argv[])
 		free(image.pixels);
 		ogid=gid;
 	}
-	saveimage(&canvas,"out.pgm");
+	saveimage(&canvas,outfile);
 
 	free(canvas.pixels);
 	sft_freefont(sft.font);
