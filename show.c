@@ -80,6 +80,7 @@ static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0, 
 
 int main(int argc, char *argv[])
 {
+	int fg=0,bg=255;
 	const char *fontfile;
 	double size;
 	const char *message;
@@ -124,7 +125,7 @@ int main(int argc, char *argv[])
 	width = max(width,lwidth);
 	width += 2*margin;
 	height+= 2*margin;
-	newimage(&canvas,width,height,255);
+	newimage(&canvas,width,height,bg);
 
 	double x = margin;
 	double y = margin + lmtx.ascender + lmtx.lineGap;
@@ -149,7 +150,7 @@ int main(int argc, char *argv[])
 		sft_render(&sft,gid,image);
 		sft_kerning(&sft,ogid,gid,&kerning);
 		x += kerning.xShift;
-		copyimage(&canvas,&image,x+mtx.leftSideBearing,y+mtx.yOffset,0);
+		copyimage(&canvas,&image,x+mtx.leftSideBearing,y+mtx.yOffset,fg);
 		x += mtx.advanceWidth;
 		free(image.pixels);
 		ogid=gid;
