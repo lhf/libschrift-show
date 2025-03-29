@@ -28,7 +28,7 @@ static void dump(Outline *outl, unsigned int n, int bbox[4])
 	printf("/q { 5 0 360 arc fill } bind def\n");
 	printf("/l { moveto lineto stroke } bind def\n");
 	printf("\n");
-	printf("%% data %d lines %d curves\n",n,outl->numCurves);;
+	printf("%% data %d lines %d curves %d total points\n",n,outl->numCurves,outl->numPoints);
 	for (i = 0; i < n; ++i) {
 		Line line=outl->lines[i];
 		Point a = outl->points[line.beg];
@@ -48,38 +48,32 @@ static void dump(Outline *outl, unsigned int n, int bbox[4])
 		Line line=outl->lines[i];
 		Point a = outl->points[line.beg];
 		Point b = outl->points[line.end];
-		printf("%g %g %g %g l\n",a.x,a.y,b.x,b.y);
+		printf("%g %g %g %g l %% %d %d\n",a.x,a.y,b.x,b.y,line.beg,line.end);
 	}
 	printf("\n");
-	printf("%% points on segments\n");
+	printf("%% %d points on segments\n",outl->numLines);
 	printf("1 1 1 setrgbcolor\n");
 	for (i = 0; i < outl->numLines; ++i) {
 		Line line=outl->lines[i];
 		Point a = outl->points[line.beg];
-		//Point b = outl->points[line.end];
-		printf("%g %g p\n",a.x,a.y);
-		//printf("%g %g p\n",b.x,b.y);
+		printf("%g %g p %% %d\n",a.x,a.y,line.beg);
 	}
 	printf("\n");
-	printf("%% points on curve\n");
+	printf("%% %d points on curve\n",n+outl->numCurves);
 	printf("0 0 0 setrgbcolor\n");
 	for (i = 0; i < n; ++i) {
 		Line line=outl->lines[i];
 		Point a = outl->points[line.beg];
-		//Point b = outl->points[line.end];
-		printf("%g %g q\n",a.x,a.y);
-		//printf("%g %g q\n",b.x,b.y);
+		printf("%g %g q %% %d\n",a.x,a.y,line.beg);
 	}
 	for (i = 0; i < outl->numCurves; ++i) {
 		Curve curve=outl->curves[i];
 		Point a = outl->points[curve.beg];
-		//Point c = outl->points[curve.end];
-		printf("%g %g q\n",a.x,a.y);
-		//printf("%g %g q\n",c.x,c.y);
+		printf("%g %g q %% %d\n",a.x,a.y,curve.beg);
 	}
 #if 0
 	printf("\n");
-	printf("%% control points\n");
+	printf("%% %d control points\n",outl->numCurves);
 	printf("0.5 setgray\n");
 	for (i = 0; i < outl->numCurves; ++i) {
 		Curve curve=outl->curves[i];
