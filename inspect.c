@@ -33,14 +33,14 @@ static void dump(Outline *outl, unsigned int n, int bbox[4])
 		Line line=outl->lines[i];
 		Point a = outl->points[line.beg];
 		Point b = outl->points[line.end];
-		printf("%% L %g %g %g %g\n",a.x,a.y,b.x,b.y);
+		printf("%% L %g %g %g %g %% %d %d\n",a.x,a.y,b.x,b.y,line.beg,line.end);
 	}
 	for (i = 0; i < outl->numCurves; ++i) {
 		Curve curve=outl->curves[i];
 		Point a = outl->points[curve.beg];
 		Point b = outl->points[curve.ctrl];
 		Point c = outl->points[curve.end];
-		printf("%% Q %g %g %g %g %g %g\n",a.x,a.y,b.x,b.y,c.x,c.y);
+		printf("%% Q %g %g %g %g %g %g %% %d %d %d\n",a.x,a.y,b.x,b.y,c.x,c.y,curve.beg,curve.ctrl,curve.end);
 	}
 	printf("\n");
 	printf("%% %d segments\n",outl->numLines);
