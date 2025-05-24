@@ -10,6 +10,7 @@
 #include <string.h>
 #include "schrift.h"
 
+#define min(a,b) ((a) < (b) ? a : b)
 #define max(a,b) ((a) > (b) ? a : b)
 
 static const char *progname;
@@ -78,58 +79,78 @@ static void copyimage(SFT_Image *dest, const SFT_Image *source, int x0, int y0, 
 	}
 }
 
+static void rectangle(SFT_Image *dest, int x0, int y0, int width, int height, int color)
+{
+	unsigned char *d=dest->pixels;
+	d+=x0+y0*dest->width;
+	int x,y;
+	for (y=0; y<height; y++)
+	{
+		for (x=0; x<width; x++)
+			d[x]=color;
+		d+=dest->width;
+	}
+}
+
 int main(int argc, char *argv[])
 {
-	int fg=0,bg=255;
-	const char *fontfile;
-	double size;
-	const char *message;
-	const char *outfile;
+	int fg=0, bg=240, bgc=255, bgg=200, margin=64, border=2;
+	(void) bgg;
+
 	SFT sft;
-	SFT_Image canvas;
+	SFT_Image canvas,glyph;
 	SFT_LMetrics lmtx;
+	SFT_GMetrics gmtx;
+	SFT_Kerning kerning;
+	SFT_Glyph gid,ogid;
 
 	progname = argv[0];
 	if (argc!=5) fatal("fontfile size_in_px message outfile");
-	fontfile = argv[1];
-	size = atof(argv[2]);
-	message = argv[3];
-	outfile = argv[4];
+	const char *fontfile = argv[1];
+	double size = atof(argv[2]);
+	const char *message = argv[3];
+	const char *outfile = argv[4];
 
 	loadfont(&sft,fontfile,size,&lmtx);
 
 	size_t k;
 	size_t n=strlen(message);
-	int margin = 100;
 	int width  = 0;
 	int height = lmtx.ascender + lmtx.lineGap;
-	int lwidth = 0;
+	double x=0.0, y=0.0, xmin=0.0, xmax=0.0;
+	ogid = 0;
 	for (k=0; k<n; k++)
 	{
 		if (message[k]=='\\' && message[k+1]=='n')
 		{
 			k++;
-			width = max(width,lwidth);
+			x = 0;
 			height += lmtx.ascender - lmtx.descender + lmtx.lineGap;
-			lwidth = 0;
+			ogid = 0;
 			continue;
 		}
 		SFT_UChar cp = (SFT_UChar) message[k];
-		SFT_Glyph gid;
-		SFT_GMetrics mtx;
-		loadglyph(&sft,cp,&gid,&mtx);
-		if (lwidth==0 && mtx.leftSideBearing<0 && margin<-mtx.leftSideBearing) margin-=mtx.leftSideBearing;
-		lwidth += max(mtx.advanceWidth,mtx.minWidth);
+		loadglyph(&sft,cp,&gid,&gmtx);
+		sft_kerning(&sft,ogid,gid,&kerning);
+		x += kerning.xShift;
+		double gxmin = x+min(0,gmtx.leftSideBearing);
+		double gxmax = x+max(gmtx.minWidth+gmtx.leftSideBearing,gmtx.advanceWidth);
+		xmin = min(xmin,gxmin);
+		xmax = max(xmax,gxmax);
+		x += gmtx.advanceWidth;
+		ogid = gid;
 	}
-	height += -lmtx.descender + lmtx.lineGap;
-	width = max(width,lwidth);
+	margin = border+max(margin,-xmin);
+	width  = border+xmax;
+	height+= -lmtx.descender + lmtx.lineGap;
 	width += 2*margin;
 	height+= 2*margin;
-	newimage(&canvas,width,height,bg);
+	newimage(&canvas,width,height,bgc);
+	rectangle(&canvas,margin,margin,width-2*margin,height-2*margin,bg);
 
-	double x = margin;
-	double y = margin + lmtx.ascender + lmtx.lineGap;
-	SFT_Glyph ogid=0;
+	x = margin;
+	y = margin + lmtx.ascender + lmtx.lineGap;
+	ogid = 0;
 	for (k=0; k<n; k++)
 	{
 		if (message[k]=='\\' && message[k+1]=='n')
@@ -137,26 +158,23 @@ int main(int argc, char *argv[])
 			k++;
 			x  = margin;
 			y += lmtx.ascender - lmtx.descender + lmtx.lineGap;
-			ogid=0;
+			ogid = 0;
 			continue;
 		}
-		SFT_Image image;
 		SFT_UChar cp = (SFT_UChar) message[k];
-		SFT_Glyph gid;
-		SFT_GMetrics mtx;
-		SFT_Kerning kerning;
-		loadglyph(&sft,cp,&gid,&mtx);
-		newimage(&image,mtx.minWidth,mtx.minHeight,0);
-		sft_render(&sft,gid,image);
+		loadglyph(&sft,cp,&gid,&gmtx);
 		sft_kerning(&sft,ogid,gid,&kerning);
 		x += kerning.xShift;
-		copyimage(&canvas,&image,x+mtx.leftSideBearing,y+mtx.yOffset,fg);
-		x += mtx.advanceWidth;
-		free(image.pixels);
-		ogid=gid;
+		newimage(&glyph,gmtx.minWidth,gmtx.minHeight,0);
+		sft_render(&sft,gid,glyph);
+		//rectangle(&canvas,x+gmtx.leftSideBearing,y+gmtx.yOffset,gmtx.minWidth,gmtx.minHeight,bgg);
+		copyimage(&canvas,&glyph,x+gmtx.leftSideBearing,y+gmtx.yOffset,fg);
+		free(glyph.pixels);
+		x += gmtx.advanceWidth;
+		//rectangle(&canvas,x,0,2,height,0);
+		ogid = gid;
 	}
 	saveimage(&canvas,outfile);
-
 	free(canvas.pixels);
 	sft_freefont(sft.font);
 	return 0;
